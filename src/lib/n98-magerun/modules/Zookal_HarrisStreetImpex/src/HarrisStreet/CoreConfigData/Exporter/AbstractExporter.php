@@ -14,7 +14,7 @@ abstract class AbstractExporter extends AbstractImpexFileExtension implements Ex
     private $_isHierarchical = FALSE;
 
     /**
-     * @var \Varien_Data_Collection
+     * @var \IteratorAggregate
      */
     protected $_collection = NULL;
 
@@ -22,7 +22,7 @@ abstract class AbstractExporter extends AbstractImpexFileExtension implements Ex
      * Run script
      *
      */
-    public function setData(\Varien_Data_Collection $collection)
+    public function setData(\IteratorAggregate $collection)
     {
         $this->_collection = $collection;
         return $this;
@@ -68,13 +68,27 @@ abstract class AbstractExporter extends AbstractImpexFileExtension implements Ex
     }
 
     /**
-     * Hmmm
+     * Hmmmmmm
      *
      * @return array
      * @throws \Exception
      */
     protected function _prepareHierarchicalCollection()
     {
+        // Magento 2
+        if ($this->_collection instanceof \ArrayObject) {
+            $collection = $this->_collection->getArrayCopy(); //convert to array
+
+            //get rid of first level with numeric indexes
+            $return = [];
+            foreach ($collection as $index => $item) {
+                $return += $item;
+            }
+
+            return $return;
+        }
+
+        // default Magento 1 behaviour
         $return = array();
         foreach ($this->_collection as $row) {
             /** @var $row \Mage_Core_Model_Config_Data */

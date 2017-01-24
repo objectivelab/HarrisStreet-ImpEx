@@ -26,6 +26,24 @@ abstract class AbstractImpex extends AbstractMagentoCommand
      */
     protected $_output = null;
 
+    /**
+     * @var \Magento\Framework\App\ObjectManager
+     */
+    protected $_objectManager;
+
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    protected $_scopeConfig;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->_objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $this->_scopeConfig = $this->_objectManager->create('Magento\Framework\App\Config\ScopeConfigInterface');
+    }
+
     protected function configure()
     {
         $this
@@ -74,9 +92,68 @@ abstract class AbstractImpex extends AbstractMagentoCommand
     }
 
     /**
+     * Get config variable value(s) by path
+     * Example:
+     *     $this->getConfig('shipping/origin/city');
+     *     $this->getConfig('shipping');
+     *
+     * @param string $configPath
+     * @param int $scopeCode - store ID or default scope
+     * @return mixed
+     */
+    protected function getConfig($configPath, $scopeCode = 0)
+    {
+        return $this->_scopeConfig->getValue(
+            $configPath,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $scopeCode
+        );
+    }
+
+    /**
      * @return \Varien_Data_Collection
      */
     protected function _getExportCollection()
+    {
+        if (defined('self::MAGENTO_MAJOR_VERSION_2') && self::MAGENTO_MAJOR_VERSION_2 === 2) {
+            return $this->_getMagento2ExportCollection();
+        } else {
+            return $this->_getMagento1ExportCollection();
+        }
+    }
+
+    /**
+     * @return \ArrayObject
+     */
+    protected function _getMagento2ExportCollection()
+    {
+        $scope = $this->_input->getOption('includeScope', 0); //TODO: support multiple scopes
+        $includes = ['general', 'catalog', 'sales', 'carriers', 'design', 'currency', 'crontab',
+            'cataloginventory', 'checkout', 'shipping', 'admin', 'dev', 'web'];
+
+        if ($includedPaths = $this->_input->getOption('include')) {
+            $includes = array_merge(explode(',', $includedPaths), $includes);
+        }
+        sort($includes);
+
+        $collection = new \ArrayObject();
+        if (count($includes)) {
+            foreach ($includes as $path) {
+                $values = $this->getConfig($path, $scope);
+                asort($values);
+
+                $currentPath = array($path => $values);
+                $collection->append($currentPath);
+            }
+        }
+
+        return $collection;
+    }
+
+    /**
+     * @return \Varien_Data_Collection
+     */
+    protected function _getMagento1ExportCollection()
     {
         /** @var \Mage_Core_Model_Resource_Config_Data_Collection $collection */
         $collection = \Mage::getModel('core/config_data')->getCollection();

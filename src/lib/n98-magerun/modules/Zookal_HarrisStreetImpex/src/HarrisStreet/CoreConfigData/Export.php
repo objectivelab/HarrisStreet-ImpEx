@@ -129,7 +129,12 @@ class Export extends AbstractImpex
             return $fileName . '.' . $this->_exporterInstance->getFileNameExtension();
         }
 
-        return \Mage::getBaseDir('var') . DIRECTORY_SEPARATOR . 'config_' . date('Ymd_His') . '.' . $this->_exporterInstance->getFileNameExtension();
+        if (isset($this->_magentoRootFolder)) {
+            $configRoot = $this->_magentoRootFolder . '/var';
+        } else {
+            $configRoot =  \Mage::getBaseDir('var');
+        }
+        return $configRoot . DIRECTORY_SEPARATOR . 'config_' . date('Ymd_His') . '.' . $this->_exporterInstance->getFileNameExtension();
     }
 
     /**

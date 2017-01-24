@@ -14,7 +14,7 @@ interface ExporterInterface
      *
      * @return $this
      */
-    public function setData(\Varien_Data_Collection $collection);
+    public function setData(\IteratorAggregate $collection);
 
     /**
      * @return string
